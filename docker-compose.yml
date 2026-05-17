@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  audit-web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - AUDIT_MODEL=${AUDIT_MODEL:-claude-opus-4-7}
+      - AUDIT_WEB_DEBUG=false
+    volumes:
+      # Mount contracts directory to audit local files via CLI
+      - ./contracts:/app/contracts:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

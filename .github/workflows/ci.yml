@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Run static analyzer tests
+        run: python tests/test_static.py
+
+      - name: Run reporter tests
+        run: python tests/test_reporters.py
+
+      - name: Run CLI tests
+        run: python tests/test_cli.py
+
+      - name: Smoke test — CLI on vulnerable contract (no AI)
+        run: python main.py --file contracts/vulnerable.sol --no-ai --format console
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t smart-contract-audit-tool .
